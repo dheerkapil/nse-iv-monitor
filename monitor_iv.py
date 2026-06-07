@@ -8,7 +8,7 @@ import subprocess
 
 # ---------- CONFIG ----------
 SYMBOL = "NIFTY"
-THRESHOLD = 1.0
+THRESHOLD = 0.75
 DATA_FILE = "iv_history.json"
 SIGNALS_FILE = "signals.csv"
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
