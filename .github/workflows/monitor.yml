@@ -1,10 +1,9 @@
-name: NSE IV Monitor
+name: NSE IV Monitor (v3)
 
 on:
   schedule:
-    # First runs at 9:15, 9:20, 9:25 IST (3:45, 3:50, 3:55 UTC)
+    # 9:15 to 15:30 IST, every 5 min
     - cron: '45-59/5 3 * * 1-5'
-    # Then every 5 min from 9:30 to 15:30 IST (4:00 to 10:00 UTC)
     - cron: '*/5 4-10 * * 1-5'
   workflow_dispatch:
 
@@ -12,14 +11,20 @@ jobs:
   monitor:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # 👈 Forces Node 24 to avoid deprecation warning
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # silence Node warning
+    permissions:
+      contents: write   # needed to push back iv_history.json and signals.csv
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0   # ensure we can push
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - run: pip install requests
-      - run: python monitor_iv.py
+      - name: Run IV monitor
+        run: python monitor_iv.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
