@@ -18,13 +18,40 @@ def send_telegram(msg):
     except Exception as e:
         print(f"Telegram error: {e}")
 
-def fetch_chain():
-    headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://www.nseindia.com/"}
+def fetch_chain(retries=3):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.nseindia.com/",
+        "Origin": "https://www.nseindia.com",
+        "Connection": "keep-alive",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+    }
     s = requests.Session()
-    s.get("https://www.nseindia.com", headers=headers)
+    s.headers.update(headers)
+    
+    # First, get the home page to set cookies
+    try:
+        s.get("https://www.nseindia.com", timeout=10)
+    except:
+        pass
+    
     url = f"https://www.nseindia.com/api/option-chain-indices?symbol={SYMBOL}"
-    resp = s.get(url, headers=headers)
-    return resp.json() if resp.status_code == 200 else None
+    
+    for attempt in range(retries):
+        try:
+            resp = s.get(url, timeout=10)
+            if resp.status_code == 200:
+                return resp.json()
+            else:
+                print(f"Attempt {attempt+1}: HTTP {resp.status_code}")
+        except Exception as e:
+            print(f"Attempt {attempt+1} failed: {e}")
+        time.sleep(2)
+    return None
 
 def get_ivs(data):
     spot = data['records']['underlyingValue']
@@ -69,7 +96,7 @@ def main():
     print(f"{datetime.now()} - Fetching {SYMBOL}")
     data = fetch_chain()
     if not data:
-        print("API failed")
+        print("API failed after retries")
         return
     
     spot, atm, atm_call, atm_put, otm_call, otm_put = get_ivs(data)
